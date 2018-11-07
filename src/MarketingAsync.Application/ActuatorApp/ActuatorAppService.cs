@@ -14,6 +14,7 @@ using MarketingAsync.Act.Sqlserver;
 using MarketingAsync.Act.User;
 using MarketingAsync.ActuatorApp.Dtos;
 using MarketingAsync.Dapper;
+using MarketingAsync.Mtimes;
 using MarketingAsync.Redis;
 
 namespace MarketingAsync.ActuatorApp
@@ -69,22 +70,30 @@ namespace MarketingAsync.ActuatorApp
             //_mergeSignActivity = mergeSignActivity;
         }
 
-       public enum State
+        public enum State
         {
             Start,
             End
         }
 
-        public static Stopwatch watch = new Stopwatch();
 
+        TimeControl time = new TimeControl(Guid.NewGuid().ToString());
+
+        /// <summary>
+        /// 设置耗时项
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="state"></param>
         public void SetStatisticalInformation(string index, State state)
         {
+
             return;
         }
 
         public void StartWork()
         {
-            //ExportAct(559);
+
+            time.Make("1.启动锚点");
             int lastExportID = 0;
             string actStr = _redisHelper.StringGet(SUCCESSACTIDQUEUEKEY);
             if (!string.IsNullOrEmpty(actStr))
@@ -92,61 +101,72 @@ namespace MarketingAsync.ActuatorApp
                 lastExportID = Convert.ToInt32(actStr);
             }
 
-            IEnumerable<int> actIdList = _signPointActivityRepository.Query<int>("select distinct  id  from  SignPointActivity where id>@Id", new { Id = lastExportID });
+            time.Make("2.redis读取完毕");
+            IEnumerable<int> actIdList = _signPointActivityRepository.Query<int>("select distinct  id  from  SignPointActivity where id>@rid", new { Id = lastExportID });
 
+            time.Make("3.redis 执行 select distinct  id  from  SignPointActivity where id>@rid 查询完毕");
+
+            time.Make("4.执行工作任务");
             //执行任务
             ExcuteWorker(actIdList);
+
+            time.Make("5.工作任务执行完毕");
 
             Console.WriteLine("运行完毕, 请清理活动表（SignActivity）下的RowId 。。。");
 
         }
 
-        public void ExcuteWorker(IEnumerable<int> actIdList)
+        public void ExcuteWorker(IEnumerable<int> rouIdList)
         {
             //返回现场
             BackToLastExport();
-            foreach (var actId in actIdList)
+            foreach (var rid in rouIdList)
             {
                 try
                 {
                     if (SignalConfig.IsStop)
                     {
-                        Console.WriteLine("收到停止导入命令，当前导入id(当前id未导入):" + actId);
+                        Console.WriteLine("收到停止导入命令，当前导入id(当前id未导入):" + rid);
                         return;
                     }
-
-                    //导入活动数据+用户数据
-                    if (ExportAct(actId))
+                    time.Make("6.导入活动数据+用户数据");
+                    if (ExportAct(rid))
                     {
-                        _redisHelper.StringSet(SUCCESSACTIDQUEUEKEY, actId.ToString(), 60 * 60 * 24 * 3);
+                        time.Make("7.设置redisKey");
+                        _redisHelper.StringSet(SUCCESSACTIDQUEUEKEY, rid.ToString(), 60 * 60 * 24 * 3);
                     }
                     else
                     {
-                        Console.WriteLine(actId + "该活动导入数据失败了");
+                        time.Make("8.该活动导入数据失败了", rid.ToString());
+                        Console.WriteLine(rid + "该活动导入数据失败了");
                         //加入日志
                         ExportError error = new ExportError()
                         {
-                            RowId = actId.ToString()
-                            ,
+                            RowId = rid.ToString(),
                             ErrorMsg = "该活动导入数据失败了111"
                         };
+
+                        time.Make("9.开始插入失败日志", rid.ToString());
                         _exportErrorRepository.Insert(error);
+                        time.Make("10.失败日志插入完成", rid.ToString());
                     }
                 }
                 catch (Exception ex)
                 {
                     //加入错误队列
                     //_redisHelper.ListRightPush(SUCCESSACTIDQUEUEKEY, actId.ToString());
-                    Console.WriteLine(actId + "该活动导入数据出错了,错误原因：" + ex.Message);
+                    Console.WriteLine(rid + "该活动导入数据出错了,错误原因：" + ex.Message);
                     //加入日志
                     ExportError error = new ExportError()
                     {
-                        RowId = actId.ToString(),
+                        RowId = rid.ToString(),
                         ErrorMsg = ex.Message,
                         OperateException = ex.ToString()
 
                     };
+                    time.Make("11.开始插入异常日志", rid.ToString());
                     _exportErrorRepository.Insert(error);
+                    time.Make("12.异常日志插入完成", rid.ToString());
                 }
             }
 
@@ -165,20 +185,29 @@ namespace MarketingAsync.ActuatorApp
         /// </summary>
         public void BackToLastExport()
         {
+            time.Make("13.获取redisKey,返回导入场景");
             string actStr = _redisHelper.StringGet(SUCCESSACTIDQUEUEKEY);
+            time.Make("14.获取redisKey完成,返回导入场景");
             if (!string.IsNullOrEmpty(actStr))
             {
                 Console.WriteLine("停止前最后导入的数据id:" + actStr);
+
+                time.Make("15.查询5条可能出错的异常信息 select top  5 *  from  SignPointActivity where id>@id");
                 IEnumerable<SignPointActivityDto> actList = _signPointActivityRepository.Query<SignPointActivityDto>("select top  5 *  from  SignPointActivity where id>@id", new { id = Convert.ToInt32(actStr) });
                 if (actList.Any())
                 {
                     Console.WriteLine("sqlserver数据库记录停止导入的后续前5条数据：" + string.Join(",", actList.Select(t => t.Id)));
                     foreach (var act in actList)
                     {
+                        time.Make("16.开始判断是否有脏数据");
                         if (_signActRepositoryMongo.FirstOrDefault(act.ActID.ToString()) != null)
                         {
+                            time.Make("17.脏数据判断完成");
                             Console.WriteLine("检测到脏数据:" + act.Id);
+
+                            time.Make("18.开始删除导出的错误数据");
                             DeleteActData(act.Id, act.ActID.ToString());
+                            time.Make("19.导出的错误数据完成");
                         }
                     }
                 }
@@ -203,12 +232,18 @@ namespace MarketingAsync.ActuatorApp
         public void DeleteActData(int rowId, string actId)
         {
             _signActRepositoryMongo.Delete(actId);
+
+            time.Make("20.脏数据查询开始");
             IEnumerable<string> openIdList = _signRecordsRepository
                 .Query<string>("select distinct  openid  from   SignRecords where  ActivityID=@actID ",
                     new { actID = rowId });
+
+            time.Make("21.脏数据查询结束");
             foreach (var openId in openIdList)
             {
+                time.Make("22.脏数据删除开始");
                 _userSignActRepositoryMongo.Delete(UserSignActivity.GetId(openId, actId));
+                time.Make("23.脏数据删除结束");
 
             }
         }
@@ -217,39 +252,64 @@ namespace MarketingAsync.ActuatorApp
         /// <summary>
         ///导出活动以及活动设置数据
         /// </summary>
-        /// <param name="Id"></param>
+        /// <param name="rid"></param>
         /// <returns></returns>
-        public bool ExportAct(int Id)
+        public bool ExportAct(int rid)
         {
+
+            time.Make("24.执行查询活动的信息 select top 1 * from SignPointActivity where  ID=@id;select  * from   SignPointSet where  ActivityID=@id ");
             List<IEnumerable<object>> queryList = _signPointActivityRepository.QueryMultiple(
                 "select top 1 * from SignPointActivity where  ID=@id;select  * from   SignPointSet where  ActivityID=@id",
-                new { id = Id }, typeof(SignPointActivityDto), typeof(SignPointSetDto));
+                new { id = rid }, typeof(SignPointActivityDto), typeof(SignPointSetDto));
+            time.Make("25.结束查询活动的信息 select top 1 * from SignPointActivity where  ID=@id;select  * from   SignPointSet where  ActivityID=@id ");
+
             SignPointActivityDto signAct = (SignPointActivityDto)queryList[0].FirstOrDefault();
             //IEnumerable<SignPointSetDto> actSetList =(IEnumerable<SignPointSetDto>) queryList[1];
             List<SignPointSetDto> actSetList = new List<SignPointSetDto>();
+
+            time.Make("26.循环更改SignPointSetDto数据结构");
             foreach (var item in queryList[1])
             {
                 actSetList.Add((SignPointSetDto)item);
             }
+            time.Make("27.循环更改SignPointSetDto数据结构结束");
+
+
+            time.Make("28.SignActivity map过程开始");
             SignActivity signActEntity = signAct.MapTo<SignActivity>();
+            time.Make("29.SignActivity map过程结束");
+
             if (signAct != null)
             {
                 signActEntity.Id = signAct.ActID.ToString();
                 signActEntity.ActID = signActEntity.Id;
-                signActEntity.RowId = Id;
+                signActEntity.RowId = rid;
                 signActEntity.CreateTime = signAct.Addtime;
             }
 
+
             if (actSetList == null || !actSetList.Any())
             {
+
+                time.Make("30.活动奖项不存在异常开始");
                 //throw new ArgumentException("活动奖项不存在。");
                 //日志记录
                 ExportError error = new ExportError()
-                { Id = Id.ToString(), ErrorMsg = Id + "活动没有奖项信息", OperateException = "" };
+                {
+                    Id = rid.ToString(),
+                    ErrorMsg = rid + "活动没有奖项信息",
+                    OperateException = ""
+
+                };
                 _exportErrorRepository.Insert(error);
+
+                time.Make("31.活动奖项不存在异常结束");
                 return false;
             }
+
             List<SignPointSetEntity> setEntityList = new List<SignPointSetEntity>();
+
+            time.Make("32.循环添加对象List<SignPointSetEntity>转换开始");
             foreach (var set in actSetList)
             {
                 var temp = set.MapTo<SignPointSetEntity>();
@@ -257,23 +317,37 @@ namespace MarketingAsync.ActuatorApp
                 setEntityList.Add(temp);
             }
 
+            time.Make("33.循环添加对象List<SignPointSetEntity>转换结束");
+
             signActEntity.SignPointSet = setEntityList;
+
+            time.Make("34.判断插入的数据是否重复开始");
+
             //插入数据到mongoDB
             if (_signActRepositoryMongo.FirstOrDefault(signActEntity.Id) == null)
             {
+                time.Make("35.判断插入的数据是否重复结束");
+
+                time.Make("36.插入活动信息开始");
                 //插入活动
                 _signActRepositoryMongo.Insert(signActEntity);
+                time.Make("37.插入活动信息结束");
+
+                time.Make("38.填入库存缓存数据到redis开始");
                 //填入库存缓存数据到redis
-                ExportCacheData(setEntityList, Id);
+                ExportCacheData(setEntityList, rid);
+                time.Make("39.填入库存缓存数据到redis结束");
+                time.Make("40.插入用户签到，领奖记录开始");
                 //插入用户签到，领奖记录
-                ExportUserSign(Id, signActEntity.Id);
+                ExportUserSign(rid, signActEntity.Id);
+                time.Make("41.插入用户签到，领奖记录结束");
                 return true;
             }
             else
             {
-                Console.WriteLine(Id + "活动数据重复导入");
+                Console.WriteLine(rid + "活动数据重复导入");
                 //ExportError error = new ExportError()
-                //{ Id = Id.ToString(), ErrorMsg = Id + "活动数据重复导入", OperateException = "" };
+                //{ rid = rid.ToString(), ErrorMsg = rid + "活动数据重复导入", OperateException = "" };
                 //_exportErrorRepository.Insert(error);
                 return true;
             }
@@ -321,6 +395,8 @@ namespace MarketingAsync.ActuatorApp
             {
                 if (item.WxHbID > 0)//红包
                 {
+
+                    time.Make("42.红包");
                     int prizeType = 0;
                     int activityType = item.IsSpecial == 0 ? 2 : 3;
                     string hbStockCountKey = string.Format(SignKeys.signactprizegrantnum_key, item.ID, prizeType);
@@ -330,9 +406,12 @@ namespace MarketingAsync.ActuatorApp
                     bool flag = _redisHelper.StringSet(hbStockCountKey, hbGrantCount.ToString(), 180 * 60 * 60 * 24);
                     //_redisHelper.StringIncrement(hbStockCountKey, hbGrantCount);
 
+                    time.Make("43.红包结束");
+
                 }
                 if (item.ProductID > 0)//产品
                 {
+                    time.Make("44.产品");
                     int prizeType = 1;
                     int activityType = item.IsSpecial == 0 ? 2 : 3;
                     string productStockCountKey = string.Format(SignKeys.signactprizegrantnum_key, item.ID, prizeType);
@@ -342,6 +421,8 @@ namespace MarketingAsync.ActuatorApp
                         new { Memberlogin = item.Memberlogin, ActID = originalId, ActivityType = activityType, PrizeType = prizeTypeDB, AwardSetId = item.ID });
                     bool flag = _redisHelper.StringSet(productStockCountKey, productStockCount.ToString(), 180 * 60 * 60 * 24);
                     //_redisHelper.StringIncrement(productStockCountKey, productStockCount);
+
+                    time.Make("45.产品");
                 }
             }
         }
@@ -354,16 +435,25 @@ namespace MarketingAsync.ActuatorApp
         /// <returns></returns>
         public bool ExportUserSign(int id, string guid)
         {
+            time.Make("46.执行 select distinct  openid  from   SignRecords where  ActivityID=@actID ");
             IEnumerable<string> openIdList = _signRecordsRepository
                 .Query<string>("select distinct  openid  from   SignRecords where  ActivityID=@actID ",
                     new { actID = id });
+            time.Make("47.执行结束 select distinct  openid  from   SignRecords where  ActivityID=@actID ");
+
             if (openIdList == null || !openIdList.Any()) return true;//无人参加
             int index = 0;
             List<UserSignActivity> userSignList = new List<UserSignActivity>();
+
+            time.Make("48.判断是否包含这条用户签到数据");
             if (_userSignActRepositoryMongo.FirstOrDefault(UserSignActivity.GetId(openIdList.FirstOrDefault(), guid)) == null)
             {
+                time.Make("49.结束判断是否包含这条用户签到数据");
+                int cindex = 0;
                 foreach (var openid in openIdList)
                 {
+                    cindex++;
+                    time.Make("50." + cindex + ".循环查询用户数据");
                     List<IEnumerable<object>> queryList = _signPointActivityRepository.QueryMultiple(
                         "select  *   from   SignRecords where  ActivityID=@actID and Openid=@openId order by ID desc; " +
                         "select  *   from   SignSpecialRecords where  ActivityID=@actID and Openid=@openId; " +
@@ -371,7 +461,9 @@ namespace MarketingAsync.ActuatorApp
                         //"select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and (ActivityType=@actType or ActivityType=@actSpecialType ",
                         "select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actType union  select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actSpecialType ",
                         new { actID = id, openId = openid, actType = 2, actSpecialType = 3 }, new Type[] { typeof(SignRecordsDto), typeof(SignSpecialRecordsDto), typeof(MemberSignatureCardDto), typeof(EventAwardRecordsDto) });
-                    List<SignRecordsEntity> recordEntityList = GetUserRecords(queryList[0], guid);//时间先后倒叙排序，最新的在最前面
+                    time.Make("51." + cindex + ".循环查询用户数据");
+                    time.Make("52." + cindex + ".数据赋值");
+                    List<SignRecordsEntity> recordEntityList = GetUserRecords(queryList[0], guid);//时间先后倒叙排序，最新的在最前面 
                     List<SignSpecialRecordsEntity> specialRecordEntityList = GetUserSpecialRecords(queryList[1], guid);
                     List<MemberSignatureCardEntity> cardEntityList = GetUserCardList(queryList[2], guid, id);
                     List<EventAwardRecordsEntity> eventAwardEntityList = GetEventAwardList(guid, queryList[3]);
@@ -385,15 +477,22 @@ namespace MarketingAsync.ActuatorApp
                         EventAwardRecords = eventAwardEntityList
                     };
                     userSignList.Add(userSign);
+                    time.Make("53." + cindex + ".数据赋值结束");
                     index++;
                     if (index >= 1000)
                     {
+                        time.Make("54." + cindex + ".1000条插入mongodb开始");
                         _userSignActRepositoryMongo.InsertList(userSignList);
+                        time.Make("55." + cindex + ".1000条插入mongodb结束");
                         index = 0;
+                        time.Make("56." + cindex + ".清理列表开始");
                         userSignList.Clear();
+                        time.Make("57." + cindex + ".清理列表结束");
                     }
                 }
+                time.Make("58.剩余的数据插入mongodb开始." + userSignList.Count);
                 _userSignActRepositoryMongo.InsertList(userSignList);
+                time.Make("59.剩余的数据插入mongodb结束." + userSignList.Count);
                 return true;
             }
             else
@@ -483,11 +582,11 @@ namespace MarketingAsync.ActuatorApp
             //更新补签卡统计
             //fact_Statistic_SignatureCard cardStatic = _signCardStaticRepository.Query<fact_Statistic_SignatureCard>(
             //    "select top 1 * from fact_Statistic_SignatureCard where  ActivityID=@id",
-            //    new { id = Id }).FirstOrDefault();
+            //    new { id = rid }).FirstOrDefault();
             //if (cardStatic != null)
             //{
             //    cardStatic.ActID = guid;
-            //    cardStatic.Id = cardStatic.ID;
+            //    cardStatic.rid = cardStatic.ID;
             //    _signCardStaticRepository.Update(cardStatic);
             //}
             return cardEntityList;

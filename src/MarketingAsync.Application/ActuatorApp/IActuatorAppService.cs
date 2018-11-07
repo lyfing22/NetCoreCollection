@@ -10,14 +10,14 @@ namespace MarketingAsync.ActuatorApp
         /// </summary>
         void StartWork();
 
-       void ExcuteWorker(IEnumerable<int> actIdList);
+       void ExcuteWorker(IEnumerable<int> rouIdList);
 
         /// <summary>
         /// 导出活动以及活动设置数据
         /// </summary>
-        /// <param name="Id"></param>
+        /// <param name="rid"></param>
         /// <returns></returns>
-        bool ExportAct(int Id);
+        bool ExportAct(int rid);
 
 
         void StartWorkFor(int id);
