@@ -30,7 +30,7 @@ namespace MarketingAsync.Mtimes
         /// </summary>
         public int Order { get; set; }
 
-        public Mtime(string group, string actid, string message = "")
+        public Mtime(string group, string message, string actid = "")
         {
             this.Group = group;
             this.DataId = actid;

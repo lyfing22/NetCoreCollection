@@ -19,7 +19,7 @@ namespace MarketingAsync.Mtimes
         {
             this.Group = group;
         }
-        public void Make(string message, string actid = null)
+        public void Marke(string message, string actid = null)
         {
             if (!Dictionary.ContainsKey(Group))
             {
