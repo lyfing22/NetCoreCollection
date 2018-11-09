@@ -6,7 +6,8 @@
 
         public const string MssqlConnectionStringName = "mssql";
         public const string MongoConnectionStringName = "mongodb";
-        public static string Redis = "redis";
-        public static string NotDatabase { get; set; } = "notdatabase";
+        public const string Redis = "redis";
+        public const string NotDatabase = "notdatabase";
+        public const string RecordCount = "recordCount";
     }
 }

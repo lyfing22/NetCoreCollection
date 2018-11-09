@@ -12,6 +12,6 @@ namespace MarketingAsync.Act.Act
     /// </summary>
     public interface ISignActivityRepository : IMongoRepository<SignActivity>, ISingletonDependency
     {
-
+        Tuple<long,long> ClearData(bool error);
     }
 }

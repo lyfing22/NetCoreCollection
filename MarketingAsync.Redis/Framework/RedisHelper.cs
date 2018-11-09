@@ -51,8 +51,7 @@ namespace Cloud.Redis.Framework
             var date = redis.HashGet(key, hashFields.Select(hashField => (RedisValue)hashField).ToArray());
             return date.Select(redisValue => (string)redisValue).ToArray();
         }
-
-        //待测试
+        
         public void HashSet(string key, IEnumerable<KeyValueStruct> entry, int database = 0)
         {
             var redis = Manager.GetDatabase(database);

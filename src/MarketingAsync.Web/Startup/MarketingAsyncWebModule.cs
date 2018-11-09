@@ -1,4 +1,5 @@
-﻿using Abp.AspNetCore;
+﻿using System;
+using Abp.AspNetCore;
 using Abp.AspNetCore.Configuration;
 using Abp.Modules;
 using Abp.Reflection.Extensions;
@@ -6,6 +7,7 @@ using MarketingAsync.Configuration;
 using MarketingAsync.Dapper;
 using MarketingAsync.Dapper.Framework;
 using MarketingAsync.Mongodb;
+using MarketingAsync.Mtimes;
 using MarketingAsync.Redis;
 using MarketingAsync.Redis.Cache;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +39,7 @@ namespace MarketingAsync.Web.Startup
             DocumentConfigurage.DatabaseMongoDB = "fangwei_wxc_db"; 
 
             PersistentConfigurage.NotDatabase = _appConfiguration.GetConnectionString(MarketingAsyncConsts.NotDatabase);
+            MtimeConfig.RecordCount = Convert.ToInt32(_appConfiguration.GetConnectionString(MarketingAsyncConsts.RecordCount));
 
 
             Configuration.Navigation.Providers.Add<MarketingAsyncNavigationProvider>();

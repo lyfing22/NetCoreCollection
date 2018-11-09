@@ -24,5 +24,6 @@ namespace MarketingAsync.ActuatorApp
         void BackToLastExport();
 
         void DeleteActData(int rowId, string actId);
+        void DelectRedisCount();
     }
 }

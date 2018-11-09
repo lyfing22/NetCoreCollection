@@ -7,7 +7,7 @@ using MongoDB.Driver;
 
 namespace MarketingAsync.Mongodb.Framework
 {
-    public class MongoRepository<TEntity, TPrimaryKey> : MongodbBase<TEntity, TPrimaryKey> where TEntity : class, IEntity<TPrimaryKey>
+    public class MongoRepository<TEntity> : MongodbBase<TEntity, string> where TEntity : class, IEntity<string>
     {
 
         public MongoRepository()
@@ -37,7 +37,7 @@ namespace MarketingAsync.Mongodb.Framework
         }
 
 
-        public override TEntity FirstOrDefault(TPrimaryKey id)
+        public override TEntity FirstOrDefault(string id)
         {
             return Queryable().FirstOrDefault(x => Equals(x.Id, id));
         }
@@ -64,15 +64,15 @@ namespace MarketingAsync.Mongodb.Framework
 
 
 
-        public override void Delete(TPrimaryKey id)
+        public override void Delete(string id)
         {
-            var dictionary = new Dictionary<string, TPrimaryKey> { { "_id", id } };
+            var dictionary = new Dictionary<string, string> { { "_id", id } };
             var query = new BsonDocument(dictionary);
             Collection.DeleteOneAsync(query);
         }
 
 
-        public override long Update(TPrimaryKey id, object fields)
+        public override long Update(string id, object fields)
         {
             var filter = Builders<TEntity>.Filter.Eq(x => x.Id, id);
             var updateDefinitionList = new List<UpdateDefinition<TEntity>>();
