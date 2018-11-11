@@ -8,7 +8,10 @@ Logs/
 # Generated files
 project.lock.json
 .vs/
-
+*.zip
+*.tar
+*.gz
+*.rar
 # mstest test results
 TestResults
 
