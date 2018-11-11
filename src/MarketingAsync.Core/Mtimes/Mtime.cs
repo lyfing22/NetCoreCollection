@@ -7,17 +7,14 @@ namespace MarketingAsync.Mtimes
     {
 
         public override string Id { get; set; }
-
         /// <summary>
         /// 计时器组名
         /// </summary>
         public string Group { get; set; }
-
         /// <summary>
         /// 关联的数据id
         /// </summary>
         public string DataId { get; set; }
-
         /// <summary>
         /// 消息情况
         /// </summary>
@@ -26,7 +23,6 @@ namespace MarketingAsync.Mtimes
         public int TotalTime { get; set; }
 
         public int CurrentTime { get; set; }
-
 
         /// <summary>
         /// 顺序
@@ -43,7 +39,7 @@ namespace MarketingAsync.Mtimes
 
         private static DateTime? currentNow = null;
 
-        private static bool isResetCurrentNow { set; get; } = true;
+        private static bool isResetCurrentNow = true;
 
         public static void ResetCurrentNow(bool reset = true)
         {
@@ -83,6 +79,11 @@ namespace MarketingAsync.Mtimes
             this.Order = order;
         }
 
+        public Mtime()
+        {
+
+
+        }
 
     }
 }

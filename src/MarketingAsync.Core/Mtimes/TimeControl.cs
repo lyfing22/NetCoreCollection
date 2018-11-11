@@ -53,6 +53,7 @@ namespace MarketingAsync.Mtimes
             if (dt.Any())
             {
                 dt.ForEach(x => x.ActId = actId);
+
                 writer.WriteLine(JsonConvert.SerializeObject(dt) + Environment.NewLine);
                 //重置时间
                 Mtime.ResetCurrentNow();
