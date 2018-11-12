@@ -29,8 +29,8 @@ namespace MarketingAsync.AnalysisApp
                     if (!string.IsNullOrWhiteSpace(input))
                     {
                         var source = JsonConvert.DeserializeObject<IEnumerable<Mtime>>(input);
-
-                        AnalysisAnchors(source.ToArray());
+                        var c = AnalysisAnchors(source.ToArray());
+                        _mtimeRepository.InsertMany(c);
                     }
                 }
             }
@@ -41,7 +41,7 @@ namespace MarketingAsync.AnalysisApp
         /// </summary>
         /// <param name="mtimes">一个actid中的锚点情况</param>
         /// <returns></returns>
-        public void AnalysisAnchors(Mtime[] nodes)
+        public List<Analysis> AnalysisAnchors(Mtime[] nodes)
         {
 
             var list = new List<Analysis>();
@@ -86,7 +86,7 @@ namespace MarketingAsync.AnalysisApp
 
                     if (self.ContainsKey(key))
                     {
-                    reset:
+                        reset:
                         if (!self.ContainsKey(key + "-" + pindex))
                         {
                             key = key + "-" + pindex;
@@ -100,11 +100,12 @@ namespace MarketingAsync.AnalysisApp
 
                     thisTime.KeyValuePairs.Value.Add(key, childs);
                 }
-                _mtimeRepository.updateData(thisTime);
-               // _mtimeRepository.Insert(m);
+                list.Add(thisTime);
+                //  _mtimeRepository.updateData(thisTime);
+                // _mtimeRepository.Insert(m);
             }
 
-
+            return list;
         }
 
 
