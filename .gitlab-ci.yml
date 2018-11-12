@@ -1,20 +1,15 @@
 stages:
-  - test
   - build
   - deploy
 
-test:
-  stage: test
-  script: echo "Running tests"
-
 build:
   stage: build
-  script: echo "Building the app"
+  script: dotnet build
 
 deploy_staging:
   stage: deploy
   script:
-    - echo "Deploy to staging server"
+    - dotnet publish /publish/dotnet-marketing
   environment:
     name: staging
     url: https://staging.example.com
@@ -24,7 +19,7 @@ deploy_staging:
 deploy_prod:
   stage: deploy
   script:
-    - echo "Deploy to production server"
+    -  tar -cvf /publish/dotnet-marketing.tar.gz  /publish/dotnet-marketing
   environment:
     name: production
     url: https://example.com
