@@ -24,6 +24,8 @@ namespace MarketingAsync.Mtimes
 
         public int TodoChild { get; set; }
 
+        public int Total { get; set; }
+
         public Analysis()
         {
             

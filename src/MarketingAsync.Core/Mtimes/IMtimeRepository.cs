@@ -10,7 +10,7 @@ namespace MarketingAsync.Mtimes
     public interface IMtimeRepository : IMongoRepository<Mtime>
     {
 
-        void WriteData(Analysis analysi);
+        void updateData(Analysis analysi);
 
 
 

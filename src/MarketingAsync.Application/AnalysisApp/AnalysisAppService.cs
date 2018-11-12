@@ -18,8 +18,7 @@ namespace MarketingAsync.AnalysisApp
             _mtimeRepository = mtimeRepository;
         }
 
-        //分析日志插入mongodb
-
+        //分析日志插入mongodb的店铺
         public void ExcuteWriteMongodb()
         {
             using (var reader = new StreamReader("./f.log"))
@@ -71,6 +70,7 @@ namespace MarketingAsync.AnalysisApp
                     thisTime.TodoChild = next.CurrentTime - thisTime.CurrentTime;
                 }
 
+                thisTime.Total = nodes[nodes.Length - 1].CurrentTime - nodes[0].CurrentTime;
                 tract++;
 
                 //比较
@@ -80,7 +80,7 @@ namespace MarketingAsync.AnalysisApp
                     var point = nodes[current];
                     var m2 = GetM1(point.Message);
                     m2 = m2.Substring(0, m2.Length - 1).Replace('.', '-');
-                    var childs = point.CurrentTime - thisTime.CurrentTime;
+                    int childs = point.CurrentTime - thisTime.CurrentTime;
                     var key = "x" + m1 + "y" + m2;
                     var pindex = 1;
 
@@ -100,8 +100,8 @@ namespace MarketingAsync.AnalysisApp
 
                     thisTime.KeyValuePairs.Value.Add(key, childs);
                 }
-                _mtimeRepository.WriteData(thisTime);
-                _mtimeRepository.Insert(m);
+                _mtimeRepository.updateData(thisTime);
+               // _mtimeRepository.Insert(m);
             }
 
 

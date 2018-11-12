@@ -13,15 +13,13 @@
     <DockerTargetOS>Linux</DockerTargetOS>
     <StartupObject></StartupObject>
     <TypeScriptToolsVersion>3.0</TypeScriptToolsVersion>
+    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="publish\**" />
     <Content Remove="publish\**" />
     <EmbeddedResource Remove="publish\**" />
     <None Remove="publish\**" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Dockerfile" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
