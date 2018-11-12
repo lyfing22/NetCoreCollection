@@ -1,0 +1,28 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script: dotnet build
+
+deploy_staging:
+  stage: deploy
+  script:
+    - dotnet publish /publish/dotnet-marketing
+  environment:
+    name: staging
+    url: https://staging.example.com
+  only:
+  - master
+
+deploy_prod:
+  stage: deploy
+  script:
+    -  tar -cvf /publish/dotnet-marketing.tar.gz  /publish/dotnet-marketing
+  environment:
+    name: production
+    url: https://example.com
+  when: manual
+  only:
+  - master
