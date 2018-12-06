@@ -39,8 +39,9 @@ namespace MarketingAsync.Web.Startup
             DocumentConfigurage.DatabaseMongoDB = "fangwei_wxc_db"; 
 
             PersistentConfigurage.NotDatabase = _appConfiguration.GetConnectionString(MarketingAsyncConsts.NotDatabase);
-            MtimeConfig.RecordCount = Convert.ToInt32(_appConfiguration.GetConnectionString(MarketingAsyncConsts.RecordCount));
 
+            MtimeConfig.RecordCount = Convert.ToInt32(_appConfiguration.GetConnectionString(MarketingAsyncConsts.RecordCount));
+            MtimeConfig.InputLog = Convert.ToBoolean(_appConfiguration.GetConnectionString(MarketingAsyncConsts.InputLog));
 
             Configuration.Navigation.Providers.Add<MarketingAsyncNavigationProvider>();
 

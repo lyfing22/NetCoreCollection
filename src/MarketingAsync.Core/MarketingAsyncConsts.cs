@@ -9,5 +9,6 @@
         public const string Redis = "redis";
         public const string NotDatabase = "notdatabase";
         public const string RecordCount = "recordCount";
+        public const string InputLog = "inputLog";
     }
 }

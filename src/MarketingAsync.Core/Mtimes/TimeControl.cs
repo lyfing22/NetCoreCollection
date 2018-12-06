@@ -34,35 +34,42 @@ namespace MarketingAsync.Mtimes
         }
         public void Marke(string message, string actid = null)
         {
-            index++;
-            currentIndex++;
-            if (!DataArray.ContainsKey(Group))
+            if (MtimeConfig.InputLog)
             {
-                DataArray[Group] = current;
+                index++;
+                currentIndex++;
+                if (!DataArray.ContainsKey(Group))
+                {
+                    DataArray[Group] = current;
+                }
+                current.Add(new Mtime(currentIndex, Group, actid, message));
             }
-            current.Add(new Mtime(currentIndex, Group, actid, message));
         }
 
 
 
         public void SaveData(int actId = 0)
         {
-            Marke("-1.保存最后的数据");
-            var writer = new StreamWriter("./f.log", true);
-            var dt = current.GetRange(lastSaveIndex, index);
-            if (dt.Any())
+            if (MtimeConfig.InputLog)
             {
-                dt.ForEach(x => x.ActId = actId);
 
-                writer.WriteLine(JsonConvert.SerializeObject(dt) + Environment.NewLine);
-                //重置时间
-                Mtime.ResetCurrentNow();
-                Marke("0.开启监控");
+                Marke("-1.保存最后的数据");
+                var writer = new StreamWriter("./f.log", true);
+                var dt = current.GetRange(lastSaveIndex, index);
+                if (dt.Any())
+                {
+                    dt.ForEach(x => x.ActId = actId);
 
-                lastSaveIndex = currentIndex;
+                    writer.WriteLine(JsonConvert.SerializeObject(dt) + Environment.NewLine);
+                    //重置时间
+                    Mtime.ResetCurrentNow();
+                    Marke("0.开启监控");
+
+                    lastSaveIndex = currentIndex;
+                }
+                writer.Close();
+                index = 0;
             }
-            writer.Close();
-            index = 0;
         }
 
         /// <summary>
