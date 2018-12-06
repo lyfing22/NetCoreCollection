@@ -14,6 +14,7 @@ namespace MarketingAsync.Mtimes
 
 
 
+        void InsertMany(List<Analysis> analysis);
 
     }
 }

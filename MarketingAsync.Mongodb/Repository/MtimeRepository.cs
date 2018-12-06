@@ -17,34 +17,33 @@ namespace MarketingAsync.Mongodb.Repository
 
         public IMongoCollection<BsonDocument> coll = Database.GetCollection<BsonDocument>("Analysis");
 
-        public void updateData(Analysis analysi)
+        //public void updateData(Analysis analysi)
+        //{
+        //    //var bson = new BsonDocument
+        //    //{
+        //    //    {"_id", analysi.Id},
+        //    //    {"group", analysi.Group},
+        //    //    {"parent", analysi.TodoParent},
+        //    //    {"now",analysi.KeyValuePairs.Key } ,
+        //    //    {"next", analysi.TodoChild},
+        //    //    {"total", analysi.Total}
+        //    //};
+        //    //foreach (var index in analysi.KeyValuePairs.Value)
+        //    //{
+        //    //    bson.Add(index.Key, index.Value);
+        //    //}
+
+        //    var update = Builders<BsonDocument>.Update.Set("now", analysi.KeyValuePairs.Key).Set("total", analysi.Total);
+
+        //    coll.UpdateOne($"{{'_id':'{analysi.Id}'}}", update);
+        //}
+
+        public void InsertMany(List<Analysis> analysis)
         {
-            //var bson = new BsonDocument
-            //{
-            //    {"_id", analysi.Id},
-            //    {"group", analysi.Group},
-            //    {"parent", analysi.TodoParent},
-            //    {"now",analysi.KeyValuePairs.Key } ,
-            //    {"next", analysi.TodoChild},
-            //    {"total", analysi.Total}
-            //};
-            //foreach (var index in analysi.KeyValuePairs.Value)
-            //{
-            //    bson.Add(index.Key, index.Value);
-            //}
-
-            var update = Builders<BsonDocument>.Update.Set("now", analysi.KeyValuePairs.Key).Set("total", analysi.Total);
-
-            coll.UpdateOne($"{{'_id':'{analysi.Id}'}}", update);
-        }
-
-
-    }
-
-    /*
-    public void updateData(Analysis analysi)
-    {
-        var bson = new BsonDocument
+            List<BsonDocument> list = new List<BsonDocument>();
+            foreach (var analysi in analysis)
+            {
+                var bson = new BsonDocument
         {
             {"_id", analysi.Id},
             {"group", analysi.Group},
@@ -53,13 +52,36 @@ namespace MarketingAsync.Mongodb.Repository
             {"next", analysi.TodoChild},
             {"total", analysi.Total}
         };
-        foreach (var index in analysi.KeyValuePairs.Value)
-        {
-            bson.Add(index.Key, index.Value);
+                foreach (var index in analysi.KeyValuePairs.Value)
+                {
+                    bson.Add(index.Key, index.Value);
+                }
+                list.Add(bson);
+            }
+            coll.InsertMany(list);
+
         }
-        coll.InsertOne(bson);
 
 
-    }*/
+        public void updateData(Analysis analysi)
+        {
 
+
+            var bson = new BsonDocument
+        {
+            {"_id", analysi.Id},
+            {"group", analysi.Group},
+            {"parent", analysi.TodoParent},
+            {"now", analysi.KeyValuePairs.Key} ,
+            {"next", analysi.TodoChild},
+            {"total", analysi.Total}
+        };
+            foreach (var index in analysi.KeyValuePairs.Value)
+            {
+                bson.Add(index.Key, index.Value);
+            }
+            coll.InsertOne(bson);
+        }
+
+    }
 }
