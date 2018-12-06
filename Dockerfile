@@ -16,4 +16,4 @@ RUN dotnet publish "MarketingAsync.Web.csproj" -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "MarketingAsync.Web.dll"]
+ENTRYPOINT ["dotnet", "MarketingAsync.Web.dll"] 
