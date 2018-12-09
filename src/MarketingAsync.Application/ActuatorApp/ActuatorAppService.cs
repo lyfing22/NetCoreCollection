@@ -102,7 +102,7 @@ namespace MarketingAsync.ActuatorApp
             }
 
             //time.Marke("2.redis读取完毕");
-            IEnumerable<int> actIdList = _signPointActivityRepository.Query<int>("select distinct  id  from  SignPointActivity where id>@rid", new { rid = lastExportID });
+            IEnumerable<int> actIdList = _signPointActivityRepository.Query<int>("select distinct  id  from  SignPointActivity where id>@rid and IsDelete=@isDelate", new { rid = lastExportID, isDelate = 0 });
 
             //time.Marke("3.redis 执行 select distinct  id  from  SignPointActivity where id>@rid 查询完毕");
 
@@ -164,7 +164,6 @@ namespace MarketingAsync.ActuatorApp
                         RowId = rid.ToString(),
                         ErrorMsg = ex.Message,
                         OperateException = ex.ToString()
-
                     };
                     //time.Marke("11.开始插入异常日志", rid.ToString());
                     _exportErrorRepository.Insert(error);
@@ -451,14 +450,11 @@ namespace MarketingAsync.ActuatorApp
         {
             //time.Marke("46.执行 select distinct  openid  from   SignRecords where  ActivityID=@actID ", id.ToString());
             IEnumerable<string> openIdList = _signRecordsRepository
-                .Query<string>("select distinct  openid  from   SignRecords where  ActivityID=@actID ",
-                    new { actID = id });
+                .Query<string>("select distinct  openid  from   SignRecords where  ActivityID=@actID ", new { actID = id });
             //time.Marke("47.执行结束 select distinct  openid  from   SignRecords where  ActivityID=@actID ", id.ToString());
-
             if (openIdList == null || !openIdList.Any()) return true;//无人参加
             int index = 0;
             List<UserSignActivity> userSignList = new List<UserSignActivity>();
-
             //time.Marke("48.判断是否包含这条用户签到数据", id.ToString());
             if (_userSignActRepositoryMongo.FirstOrDefault(UserSignActivity.GetId(openIdList.FirstOrDefault(), guid)) == null)
             {
@@ -467,20 +463,38 @@ namespace MarketingAsync.ActuatorApp
                 foreach (var openid in openIdList)
                 {
                     cindex++;
-                    //time.Marke("50." + cindex + ".循环查询用户数据", id.ToString());
-                    List<IEnumerable<object>> queryList = _signPointActivityRepository.QueryMultiple(
-                        "select  *   from   SignRecords where  ActivityID=@actID and Openid=@openId order by ID desc; " +
-                        "select  *   from   SignSpecialRecords where  ActivityID=@actID and Openid=@openId; " +
-                        "select  *   from   MemberSignatureCard where  ActivityID=@actID and Openid=@openId; " +
-                        //"select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and (ActivityType=@actType or ActivityType=@actSpecialType ",
-                        "select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actType union  select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actSpecialType ",
-                        new { actID = id, openId = openid, actType = 2, actSpecialType = 3 }, new Type[] { typeof(SignRecordsDto), typeof(SignSpecialRecordsDto), typeof(MemberSignatureCardDto), typeof(EventAwardRecordsDto) });
-                    //time.Marke("51." + cindex + ".循环查询用户数据", id.ToString());
-                    //time.Marke("52." + cindex + ".数据赋值", id.ToString());
-                    List<SignRecordsEntity> recordEntityList = GetUserRecords(queryList[0], guid);//时间先后倒叙排序，最新的在最前面 
-                    List<SignSpecialRecordsEntity> specialRecordEntityList = GetUserSpecialRecords(queryList[1], guid);
-                    List<MemberSignatureCardEntity> cardEntityList = GetUserCardList(queryList[2], guid, id);
-                    List<EventAwardRecordsEntity> eventAwardEntityList = GetEventAwardList(guid, queryList[3]);
+                    #region  MultipQuery
+                    ////time.Marke("50." + cindex + ".循环查询用户数据", id.ToString());
+                    //List<IEnumerable<object>> queryList = _signPointActivityRepository.QueryMultiple(
+                    //    "select  *   from   SignRecords where  ActivityID=@actID and Openid=@openId order by ID desc; " +
+                    //    "select  *   from   SignSpecialRecords where  ActivityID=@actID and Openid=@openId; " +
+                    //    "select  *   from   MemberSignatureCard where  ActivityID=@actID and Openid=@openId; " +
+                    //    //"select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and (ActivityType=@actType or ActivityType=@actSpecialType ",
+                    //    "select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actType union  select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actSpecialType ",
+                    //    new { actID = id, openId = openid, actType = 2, actSpecialType = 3 }, new Type[] { typeof(SignRecordsDto), typeof(SignSpecialRecordsDto), typeof(MemberSignatureCardDto), typeof(EventAwardRecordsDto) });
+                    ////time.Marke("51." + cindex + ".循环查询用户数据", id.ToString());
+                    ////time.Marke("52." + cindex + ".数据赋值", id.ToString());
+                    //List<SignRecordsEntity> recordEntityList = GetUserRecords(queryList[0], guid);//时间先后倒叙排序，最新的在最前面 
+                    //List<SignSpecialRecordsEntity> specialRecordEntityList = GetUserSpecialRecords(queryList[1], guid);
+                    //List<MemberSignatureCardEntity> cardEntityList = GetUserCardList(queryList[2], guid, id);
+                    //List<EventAwardRecordsEntity> eventAwardEntityList = GetEventAwardList(guid, queryList[3]);
+                    #endregion
+
+                    #region SingleQuery
+                    IEnumerable<SignRecordsDto> recordTempList = _signRecordsRepository
+                        .Query<SignRecordsDto>("select  *   from   SignRecords where  ActivityID=@actID and Openid=@openId order by ID desc", new { actID = id, openId = openid });
+                    IEnumerable<SignSpecialRecordsDto> specialTempList = _signRecordsRepository
+                        .Query<SignSpecialRecordsDto>("select  *   from   SignSpecialRecords where  ActivityID=@actID and Openid=@openId", new { actID = id, openId = openid });
+                    IEnumerable<MemberSignatureCardDto> cardTempList = _signRecordsRepository
+                        .Query<MemberSignatureCardDto>("select  *   from   MemberSignatureCard where  ActivityID=@actID and Openid=@openId", new { actID = id, openId = openid });
+                    IEnumerable<EventAwardRecordsDto> awardTempList = _signRecordsRepository
+                        .Query<EventAwardRecordsDto>("select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actType union  select  *   from   EventAwardRecords where  ActivityID=@actID and Openid=@openId and ActivityType=@actSpecialType ",
+                            new { actID = id, openId = openid, actType = 2, actSpecialType = 3 });
+                    List<SignRecordsEntity> recordEntityList = GetUserRecords(recordTempList, guid);//时间先后倒叙排序，最新的在最前面 
+                    List<SignSpecialRecordsEntity> specialRecordEntityList = GetUserSpecialRecords(specialTempList, guid);
+                    List<MemberSignatureCardEntity> cardEntityList = GetUserCardList(cardTempList, guid, id);
+                    List<EventAwardRecordsEntity> eventAwardEntityList = GetEventAwardList(guid, awardTempList);
+                    #endregion
                     UserSignActivity userSign = new UserSignActivity(openid, guid)
                     {
                         LastSignTime = getLastSignTime(recordEntityList),
