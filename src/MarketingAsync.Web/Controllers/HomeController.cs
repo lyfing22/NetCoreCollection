@@ -25,12 +25,14 @@ namespace MarketingAsync.Web.Controllers
         private readonly IRedisHelper _redisHelper;
         private readonly IActuatorAppService _actuatorAppService;
 
+        private readonly string SUCCESSACTIDQUEUEKEY = "Export_SuccessActIdKey";
+
         public HomeController(
             IRedisHelper redisHelper,
             IActuatorAppService actuatorAppService,
             ISignActivityRepository signActivityRepository,
             ISignPointActivityRepository signPointActivityRepository
-            )
+        )
         {
             _actuatorAppService = actuatorAppService;
             _redisHelper = redisHelper;
@@ -43,6 +45,13 @@ namespace MarketingAsync.Web.Controllers
         {
             return Json("start");
         }
+
+        public JsonResult StartWork()
+        {
+            _actuatorAppService.StartWork();
+            return Json("start");
+        }
+
 
         /// <summary>
         /// 删除mongodb和redis数据
@@ -67,6 +76,7 @@ namespace MarketingAsync.Web.Controllers
             var dt = _signActivityRepository.ClearData(error);
             return Json(string.Format("delete active:{0},delete user{1}", dt.Item1, dt.Item2));
         }
+
         /// <summary>
         /// 删除Redis
         /// </summary>
@@ -109,10 +119,12 @@ namespace MarketingAsync.Web.Controllers
             {
                 return Json("长度超过下标");
             }
+
             if (start >= end)
             {
                 return Json("起始值需小于结束值");
             }
+
             var data = now.GetRange(start, start + end - start);
             return Json(data);
         }
@@ -138,6 +150,13 @@ namespace MarketingAsync.Web.Controllers
             _redisHelper.StringGet("guid:" + guid);
             _redisHelper.KeyDelete("guid:" + guid);
             return Json(guid);
+        }
+
+
+        public string SetRedis(string value)
+        {
+            _redisHelper.StringSet(SUCCESSACTIDQUEUEKEY, value, 60 * 60 * 24 * 3);
+            return _redisHelper.StringGet(SUCCESSACTIDQUEUEKEY);
         }
 
         public override JsonResult Json(object obj)

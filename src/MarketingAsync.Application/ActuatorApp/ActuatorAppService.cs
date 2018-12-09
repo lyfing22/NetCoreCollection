@@ -1,26 +1,18 @@
 ﻿using Abp.AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Abp.AutoMapper;
-using Abp.Domain.Repositories;
 using AutoMapper;
-using MarketingAsync.Act;
 using MarketingAsync.Act.Act;
 using MarketingAsync.Act.Keys;
 using MarketingAsync.Act.Sqlserver;
 using MarketingAsync.Act.User;
 using MarketingAsync.ActuatorApp.Dtos;
-using MarketingAsync.Dapper;
 using MarketingAsync.Mtimes;
 using MarketingAsync.Redis;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MarketingAsync.ActuatorApp
 {
-    [AutoMap()]
     public class ActuatorAppService : MarketingAsyncAppServiceBase, IActuatorAppService
     {
 
@@ -642,6 +634,7 @@ namespace MarketingAsync.ActuatorApp
                     {
                         var temp = signRecord.MapTo<SignRecordsEntity>();
                         temp.ActivityID = guid;
+                        if (temp.SpecialID == "0") temp.SpecialID = null;
                         recordEntityList.Add(temp);
                     }
                     else if (!string.IsNullOrEmpty(signRecord.YYYYMMDD))
@@ -653,6 +646,7 @@ namespace MarketingAsync.ActuatorApp
                         }).CreateMapper();
                         var temp = mapper.Map<SignRecordsEntity>(signRecord);
                         temp.ActivityID = guid;
+                        if (temp.SpecialID == "0") temp.SpecialID = null;
                         recordEntityList.Add(temp);
                     }
                     else
@@ -664,6 +658,7 @@ namespace MarketingAsync.ActuatorApp
                         }).CreateMapper();
                         var temp = mapper.Map<SignRecordsEntity>(signRecord);
                         temp.ActivityID = guid;
+                        if (temp.SpecialID == "0") temp.SpecialID = null;
                         recordEntityList.Add(temp);
                     }
 
