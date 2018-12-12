@@ -52,7 +52,11 @@ namespace MarketingAsync.Web.Controllers
             return Json("start");
         }
 
-
+        public JsonResult ReExportErrorData()
+        {
+            _actuatorAppService.ReExportErrorData();
+            return Json("start");
+        }
         /// <summary>
         /// É¾³ýmongodbºÍredisÊý¾Ý
         /// </summary>

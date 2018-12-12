@@ -75,8 +75,6 @@ namespace MarketingAsync.ActuatorApp
             Start,
             End
         }
-
-
         TimeControl time = new TimeControl(Guid.NewGuid().ToString().Replace("-", ""));
 
         /// <summary>
@@ -90,8 +88,16 @@ namespace MarketingAsync.ActuatorApp
             return;
         }
 
+
+
+        public void MySqlTest()
+        {
+
+        }
+
         public void StartWork()
         {
+
 
             //time.Marke("1.启动锚点");
             int lastExportID = 0;
@@ -102,7 +108,7 @@ namespace MarketingAsync.ActuatorApp
             }
 
             //time.Marke("2.redis读取完毕");
-            IEnumerable<int> actIdList = _signPointActivityRepository.Query<int>("select distinct  id  from  SignPointActivity where id>@rid and IsDelete=@isDelate", new { rid = lastExportID, isDelate = 0 });
+            IEnumerable<int> actIdList = _signPointActivityRepository.Query<int>("select distinct  id  from  SignPointActivity where id>@rid  and id<=@maxID and IsDelete=@isDelate", new { rid = lastExportID, isDelate = 0, maxID = 1400 });
 
             //time.Marke("3.redis 执行 select distinct  id  from  SignPointActivity where id>@rid 查询完毕");
 
@@ -182,6 +188,50 @@ namespace MarketingAsync.ActuatorApp
 
         #region  ExportData 导出活动数据
 
+        public void ReExportErrorData()
+        {
+            List<ExportError> errorActList = _exportErrorRepository.GetAllList();
+            if (errorActList.Any())
+            {
+                foreach (var act in errorActList)
+                {
+                    try
+                    {
+                        SignActivity signActEntity = _signActRepositoryMongo.FirstOrDefault(m => m.RowId == Convert.ToInt32(act.RowId));
+                        DeleteActData(signActEntity.RowId, signActEntity.ActID);
+                        if (ExportAct(signActEntity.RowId))
+                        {
+                            _exportErrorRepository.Delete(t => t.RowId == signActEntity.RowId.ToString());
+                        }
+                        else
+                        {
+                            //加入错误队列
+                            Console.WriteLine(signActEntity.RowId + "该活动导入数据出错了");
+                            //加入日志
+                            ExportError error = new ExportError()
+                            {
+                                RowId = act.RowId,
+                                ErrorMsg = "该活动导入数据失败了111"
+                            };
+                            _exportErrorRepository.Insert(error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(act.RowId + "该活动导入数据出错了,错误原因：" + ex.Message);
+                        //加入日志
+                        ExportError error = new ExportError()
+                        {
+                            RowId = act.RowId,
+                            ErrorMsg = ex.Message,
+                            OperateException = ex.ToString()
+                        };
+                        _exportErrorRepository.Insert(error);
+                    }
+                }
+            }
+        }
+
 
         /// <summary>
         /// 返回上次最后导入场景：删除导入错误时候的数据
@@ -247,7 +297,6 @@ namespace MarketingAsync.ActuatorApp
                 //time.Marke("22.脏数据删除开始", actId);
                 _userSignActRepositoryMongo.Delete(UserSignActivity.GetId(openId, actId));
                 //time.Marke("23.脏数据删除结束", actId);
-
             }
         }
 
@@ -348,11 +397,11 @@ namespace MarketingAsync.ActuatorApp
 
                 //time.Marke("38.填入库存缓存数据到redis开始", rid.ToString());
                 //填入库存缓存数据到redis
-                ExportCacheData(setEntityList, rid);
+                //ExportCacheData(setEntityList, rid);
                 //time.Marke("39.填入库存缓存数据到redis结束", rid.ToString());
                 //time.Marke("40.插入用户签到，领奖记录开始", rid.ToString());
                 //插入用户签到，领奖记录
-                ExportUserSign(rid, signActEntity.Id);
+                //ExportUserSign(rid, signActEntity.Id);
                 //time.Marke("41.插入用户签到，领奖记录结束", rid.ToString());
                 return true;
             }

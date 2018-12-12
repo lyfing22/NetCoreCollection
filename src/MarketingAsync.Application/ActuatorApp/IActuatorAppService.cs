@@ -10,7 +10,7 @@ namespace MarketingAsync.ActuatorApp
         /// </summary>
         void StartWork();
 
-       void ExcuteWorker(IEnumerable<int> rouIdList);
+        void ExcuteWorker(IEnumerable<int> rouIdList);
 
         /// <summary>
         /// 导出活动以及活动设置数据
@@ -19,7 +19,7 @@ namespace MarketingAsync.ActuatorApp
         /// <returns></returns>
         bool ExportAct(int rid);
 
-
+        void ReExportErrorData();
         void StartWorkFor(int id);
         void BackToLastExport();
 
